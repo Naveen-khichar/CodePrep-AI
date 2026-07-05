@@ -1,5 +1,9 @@
+export const dynamic = "force-dynamic";
+
 import { problems } from "../../data/problems";
-import CodeEditor from "./CodeEditor";
+import CodeWorkspace from "./CodeWorkspace";
+import ErrorBoundary from "../../components/ErrorBoundary";
+import { notFound } from "next/navigation";
 
 export default async function ProblemPage({
   params,
@@ -8,23 +12,17 @@ export default async function ProblemPage({
 }) {
   const { id } = await params;
 
-  const problem = problems.find(
-    (p) => p.id === Number(id)
-  );
+  const problem = problems.find((p) => p.id === Number(id));
 
-  if (!problem) return <div>Not found</div>;
+  if (!problem) {
+    return notFound();
+  }
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold">
-        {problem.title}
-      </h1>
-
-      <p className="my-4">
-        {problem.description}
-      </p>
-
-      <CodeEditor />
+    <div className="flex flex-col flex-grow bg-background">
+      <ErrorBoundary>
+        <CodeWorkspace problem={problem} />
+      </ErrorBoundary>
     </div>
   );
 }
