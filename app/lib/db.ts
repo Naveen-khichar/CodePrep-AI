@@ -86,7 +86,7 @@ export async function addSubmission(
       problemTitle: sub.problemTitle,
       language: sub.language,
       code: sub.code,
-      verdict: sub.verdict,
+      verdict: sub.verdict || "Runtime Error",
       runtime: sub.runtime,
       memory: sub.memory,
       errorMessage: sub.errorMessage || null,

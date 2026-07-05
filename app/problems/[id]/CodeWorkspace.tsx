@@ -117,6 +117,12 @@ export default function CodeWorkspace({ problem }: CodeWorkspaceProps) {
       });
       
       const result = await response.json();
+      
+      if (!response.ok) {
+        result.verdict = "Runtime Error";
+        result.errorLogs = result.error || result.details || "Submission server error";
+      }
+      
       setSubmitVerdict(result);
 
       // Perform database progress updates
