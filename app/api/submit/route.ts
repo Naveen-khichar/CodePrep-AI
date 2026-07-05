@@ -56,13 +56,14 @@ export async function POST(request: Request) {
         let responseData;
         
         if (apiKey) {
+          const rapidApiHost = process.env.RAPIDAPI_HOST || "judge0-ce.p.rapidapi.com";
           const response = await axios.request({
             method: "POST",
-            url: "https://judge0-ce.p.rapidapi.com/submissions",
+            url: `https://${rapidApiHost}/submissions`,
             params: { base64_encoded: "true", wait: "true" },
             headers: {
               "x-rapidapi-key": apiKey,
-              "x-rapidapi-host": "judge0-ce.p.rapidapi.com",
+              "x-rapidapi-host": rapidApiHost,
               "Content-Type": "application/json",
             },
             data: {

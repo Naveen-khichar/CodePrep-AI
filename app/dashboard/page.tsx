@@ -5,18 +5,8 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import ProtectedRoute from "../components/ProtectedRoute";
-import { db } from "../lib/firebase";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  getDocs,
-  Timestamp,
-} from "firebase/firestore";
+import { getDashboardStatsSQL } from "../lib/dataconnect";
+import { Timestamp } from "firebase/firestore";
 import { problems } from "../data/problems";
 import Link from "next/link";
 
@@ -47,39 +37,9 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        // 1. Fetch user stats progress document
-        const progressRef = doc(db, "progress", user.uid);
-        const progressSnap = await getDoc(progressRef);
-        
-        if (progressSnap.exists()) {
-          setStats(progressSnap.data() as ProgressStats);
-        } else {
-          // Fallback default statistics for new profile
-          setStats({
-            solvedProblems: [],
-            submissionsCount: 0,
-            streak: 0,
-            lastSubmissionDate: "",
-            accuracy: 100,
-            favoriteLanguage: "JavaScript",
-            totalTimeSpent: 0,
-          });
-        }
-
-        // 2. Fetch recent submissions logs (limit to 5)
-        const subQuery = query(
-          collection(db, "submissions"),
-          where("userId", "==", user.uid),
-          orderBy("timestamp", "desc"),
-          limit(5)
-        );
-        const subSnap = await getDocs(subQuery);
-        const subsList: any[] = [];
-        subSnap.forEach((doc) => {
-          subsList.push({ id: doc.id, ...doc.data() });
-        });
-        setRecentSubmissions(subsList);
-
+        const data = await getDashboardStatsSQL(user.uid);
+        setStats(data.progress as ProgressStats);
+        setRecentSubmissions(data.recentSubmissions);
       } catch (error) {
         console.error("Error retrieving dashboard records:", error);
       } finally {

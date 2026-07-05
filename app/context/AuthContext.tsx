@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { auth, googleProvider, db } from "../lib/firebase";
+import { auth, googleProvider } from "../lib/firebase";
+import { syncUserSQL } from "../lib/dataconnect";
 
 interface AuthContextType {
   user: User | null;
@@ -23,34 +23,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser) {
         setUser(firebaseUser);
         
-        // Sync user to Firestore DB in the background
+        // Sync user to PostgreSQL using SQL Connect
         try {
-          const userRef = doc(db, "users", firebaseUser.uid);
-          const userSnap = await getDoc(userRef);
-          if (!userSnap.exists()) {
-            await setDoc(userRef, {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName || "User",
-              photoURL: firebaseUser.photoURL || "",
-              createdAt: serverTimestamp(),
-            });
-            
-            // Also initialize progress record
-            const progressRef = doc(db, "progress", firebaseUser.uid);
-            await setDoc(progressRef, {
-              userId: firebaseUser.uid,
-              solvedProblems: [],
-              submissionsCount: 0,
-              streak: 0,
-              lastSubmissionDate: "",
-              accuracy: 100,
-              favoriteLanguage: "JavaScript",
-              totalTimeSpent: 0,
-            }, { merge: true });
-          }
+          await syncUserSQL({
+            id: firebaseUser.uid,
+            email: firebaseUser.email || "",
+            displayName: firebaseUser.displayName || "User",
+            photoUrl: firebaseUser.photoURL || undefined
+          });
         } catch (error) {
-          console.error("Error synchronizing user session with Firestore:", error);
+          console.error("Error synchronizing user session with SQL Connect:", error);
         }
       } else {
         setUser(null);

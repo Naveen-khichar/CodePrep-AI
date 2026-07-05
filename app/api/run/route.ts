@@ -36,14 +36,15 @@ export async function POST(request: Request) {
 
     // 1. Check if we have active Judge0 configs
     if (apiKey) {
-      // RapidAPI Judge0 execution
+      const rapidApiHost = process.env.RAPIDAPI_HOST || "judge0-ce.p.rapidapi.com";
+      // RapidAPI Code Compiler execution
       const options = {
         method: "POST",
-        url: "https://judge0-ce.p.rapidapi.com/submissions",
+        url: `https://${rapidApiHost}/submissions`,
         params: { base64_encoded: "true", wait: "true" },
         headers: {
           "x-rapidapi-key": apiKey,
-          "x-rapidapi-host": "judge0-ce.p.rapidapi.com",
+          "x-rapidapi-host": rapidApiHost,
           "Content-Type": "application/json",
         },
         data: {

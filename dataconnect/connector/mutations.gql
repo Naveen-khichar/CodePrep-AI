@@ -1,0 +1,67 @@
+# GraphQL mutations for CodePrep AI database transactions
+
+# Synchronizes user profiles upon Google authentication
+mutation SyncUser($id: String!, $email: String!, $displayName: String!, $photoUrl: String) @auth(level: USER) {
+  user_upsert(
+    data: {
+      id: $id
+      email: $email
+      displayName: $displayName
+      photoUrl: $photoUrl
+    }
+  )
+}
+
+# Registers a code submission and upserts streak metrics
+mutation AddSubmission(
+  $userId: String!,
+  $problemId: String!,
+  $problemTitle: String!,
+  $language: String!,
+  $code: String!,
+  $verdict: String!,
+  $runtime: Int!,
+  $memory: Int!,
+  $errorMessage: String,
+  $submissionsCount: Int!,
+  $streak: Int!,
+  $lastSubmissionDate: String!,
+  $accuracy: Float!,
+  $favoriteLanguage: String!,
+  $totalTimeSpent: Int!
+) @auth(level: USER) {
+  submission_insert(
+    data: {
+      userId: $userId
+      problemId: $problemId
+      problemTitle: $problemTitle
+      language: $language
+      code: $code
+      verdict: $verdict
+      runtime: $runtime
+      memory: $memory
+      errorMessage: $errorMessage
+    }
+  )
+  progress_upsert(
+    data: {
+      userId: $userId
+      submissionsCount: $submissionsCount
+      streak: $streak
+      lastSubmissionDate: $lastSubmissionDate
+      accuracy: $accuracy
+      favoriteLanguage: $favoriteLanguage
+      totalTimeSpent: $totalTimeSpent
+    }
+  )
+}
+
+# Records a composite solved problem entry
+mutation MarkProblemSolved($userId: String!, $problemId: String!) @auth(level: USER) {
+  solvedProblem_upsert(
+    data: {
+      userId: $userId
+      problemId: $problemId
+    }
+  )
+}

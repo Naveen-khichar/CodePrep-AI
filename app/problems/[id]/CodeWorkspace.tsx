@@ -5,22 +5,12 @@ import { useAuth } from "../../context/AuthContext";
 import { Problem } from "../../data/problems";
 import CodeEditor from "./CodeEditor";
 import AiAssistantPanel from "../../components/AiAssistantPanel";
-import { db } from "../../lib/firebase";
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  orderBy,
-  getDocs,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  arrayUnion,
-  increment,
-  Timestamp,
-} from "firebase/firestore";
+import { 
+  addSubmissionSQL, 
+  getProblemSubmissionsSQL, 
+  getDashboardStatsSQL 
+} from "../../lib/dataconnect";
+import { Timestamp } from "firebase/firestore";
 
 interface CodeWorkspaceProps {
   problem: Problem;
@@ -57,22 +47,12 @@ export default function CodeWorkspace({ problem }: CodeWorkspaceProps) {
     }
   }, [language, problem.starterTemplates]);
 
-  // Fetch past submissions from Firestore
+  // Fetch past submissions from PostgreSQL
   const fetchSubmissions = async () => {
     if (!user) return;
     setLoadingSubmissions(true);
     try {
-      const q = query(
-        collection(db, "submissions"),
-        where("userId", "==", user.uid),
-        where("problemId", "==", problem.id.toString()),
-        orderBy("timestamp", "desc")
-      );
-      const querySnapshot = await getDocs(q);
-      const fetched: any[] = [];
-      querySnapshot.forEach((doc) => {
-        fetched.push({ id: doc.id, ...doc.data() });
-      });
+      const fetched = await getProblemSubmissionsSQL(user.uid, problem.id.toString());
       setPastSubmissions(fetched);
     } catch (error) {
       console.error("Error loading submissions:", error);
@@ -139,8 +119,21 @@ export default function CodeWorkspace({ problem }: CodeWorkspaceProps) {
       const result = await response.json();
       setSubmitVerdict(result);
 
-      // Perform Firestore Writes Client-Side with Authorized Session
-      await addDoc(collection(db, "submissions"), {
+      // Perform PostgreSQL Database transaction updates via SQL Connect
+      const dataConnectData = await getDashboardStatsSQL(user.uid);
+      const currentProgress = dataConnectData.progress;
+      
+      const todayStr = new Date().toISOString().split("T")[0];
+      const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+      
+      let streakVal = 1;
+      if (currentProgress.lastSubmissionDate === yesterdayStr) {
+        streakVal = currentProgress.streak + 1;
+      } else if (currentProgress.lastSubmissionDate === todayStr) {
+        streakVal = currentProgress.streak;
+      }
+
+      await addSubmissionSQL({
         userId: user.uid,
         problemId: problem.id.toString(),
         problemTitle: problem.title,
@@ -149,58 +142,11 @@ export default function CodeWorkspace({ problem }: CodeWorkspaceProps) {
         verdict: result.verdict,
         runtime: result.runtime || 0,
         memory: result.memory || 0,
-        timestamp: Timestamp.now(),
-        errorMessage: result.errorLogs || null,
+        errorMessage: result.errorLogs || undefined
+      }, {
+        streak: streakVal,
+        lastSubmissionDate: todayStr
       });
-
-      // Synchronize User Progress collection
-      const progressRef = doc(db, "progress", user.uid);
-      const progressSnap = await getDoc(progressRef);
-      
-      const todayStr = new Date().toISOString().split("T")[0];
-      let streakVal = 1;
-      let solvedList: string[] = [];
-
-      if (progressSnap.exists()) {
-        const progData = progressSnap.data();
-        solvedList = progData.solvedProblems || [];
-        const isNewSolve = result.verdict === "Accepted" && !solvedList.includes(problem.id.toString());
-        
-        if (isNewSolve) {
-          solvedList.push(problem.id.toString());
-        }
-
-        // Calculate Streaks
-        const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-        if (progData.lastSubmissionDate === yesterdayStr) {
-          streakVal = (progData.streak || 0) + 1;
-        } else if (progData.lastSubmissionDate === todayStr) {
-          streakVal = progData.streak || 1;
-        }
-
-        await updateDoc(progressRef, {
-          submissionsCount: increment(1),
-          lastSubmissionDate: todayStr,
-          streak: streakVal,
-          favoriteLanguage: language,
-          solvedProblems: solvedList,
-        });
-      } else {
-        // Initialize fallback
-        if (result.verdict === "Accepted") {
-          solvedList.push(problem.id.toString());
-        }
-        await setDoc(progressRef, {
-          userId: user.uid,
-          solvedProblems: solvedList,
-          submissionsCount: 1,
-          streak: 1,
-          lastSubmissionDate: todayStr,
-          accuracy: 100,
-          favoriteLanguage: language,
-          totalTimeSpent: 10,
-        });
-      }
       
       // Refresh submissions tab list in background
       fetchSubmissions();

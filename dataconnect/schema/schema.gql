@@ -1,0 +1,42 @@
+# Core relational schema for PostgreSQL database managed via Firebase Data Connect
+
+type User @table {
+  id: String! @primaryKey # Matches Firebase Auth UID
+  email: String! @unique
+  displayName: String!
+  photoUrl: String
+  createdAt: Date! @default(expr: "request.time")
+}
+
+type Submission @table {
+  id: UUID! @default(expr: "uuidV4")
+  userId: String!
+  user: User! @relation
+  problemId: String!
+  problemTitle: String!
+  language: String!
+  code: String!
+  verdict: String!
+  runtime: Int!
+  memory: Int!
+  errorMessage: String
+  timestamp: Date! @default(expr: "request.time")
+}
+
+type Progress @table {
+  userId: String! @primaryKey
+  user: User! @relation
+  submissionsCount: Int! @default(value: 0)
+  streak: Int! @default(value: 0)
+  lastSubmissionDate: String
+  accuracy: Float! @default(value: 100.0)
+  favoriteLanguage: String! @default(value: "JavaScript")
+  totalTimeSpent: Int! @default(value: 0)
+}
+
+type SolvedProblem @table(key: ["userId", "problemId"]) {
+  userId: String!
+  user: User! @relation
+  problemId: String!
+  solvedAt: Date! @default(expr: "request.time")
+}

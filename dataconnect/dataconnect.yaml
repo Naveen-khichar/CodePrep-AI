@@ -1,0 +1,11 @@
+specVersion: "v1alpha"
+serviceId: "codeprepai-db"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "codeprepai_db"
+      cloudSql:
+        instanceId: "codeprepai-postgres"
+connectorDirs:
+  - "./connector"
