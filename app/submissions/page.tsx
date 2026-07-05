@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import ProtectedRoute from "../components/ProtectedRoute";
-import { getSubmissionsHistorySQL } from "../lib/dataconnect";
+import { getSubmissionsHistory } from "../lib/db";
 import { Timestamp } from "firebase/firestore";
 import Link from "next/link";
 
@@ -23,7 +23,7 @@ export default function SubmissionsPage() {
     const fetchSubmissions = async () => {
       setLoading(true);
       try {
-        const logs = await getSubmissionsHistorySQL(user.uid);
+        const logs = await getSubmissionsHistory(user.uid);
         setSubmissions(logs);
       } catch (error) {
         console.error("Error retrieving historical submissions:", error);

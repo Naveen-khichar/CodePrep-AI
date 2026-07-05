@@ -1,5 +1,0 @@
-connectorId: "codeprepai-connector"
-generate:
-  javascriptSdk:
-    outputDir: "../sdk"
-    package: "@codeprepai/sdk"

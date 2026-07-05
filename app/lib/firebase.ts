@@ -13,7 +13,7 @@ const firebaseConfig = {
 };
 
 // Prevent multi-app initialization in Next.js Hot Module Replacement (HMR)
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);

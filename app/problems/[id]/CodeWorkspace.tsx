@@ -6,10 +6,10 @@ import { Problem } from "../../data/problems";
 import CodeEditor from "./CodeEditor";
 import AiAssistantPanel from "../../components/AiAssistantPanel";
 import { 
-  addSubmissionSQL, 
-  getProblemSubmissionsSQL, 
-  getDashboardStatsSQL 
-} from "../../lib/dataconnect";
+  addSubmission, 
+  getProblemSubmissions, 
+  getDashboardStats 
+} from "../../lib/db";
 import { Timestamp } from "firebase/firestore";
 
 interface CodeWorkspaceProps {
@@ -47,12 +47,12 @@ export default function CodeWorkspace({ problem }: CodeWorkspaceProps) {
     }
   }, [language, problem.starterTemplates]);
 
-  // Fetch past submissions from PostgreSQL
+  // Fetch past submissions from Firestore
   const fetchSubmissions = async () => {
     if (!user) return;
     setLoadingSubmissions(true);
     try {
-      const fetched = await getProblemSubmissionsSQL(user.uid, problem.id.toString());
+      const fetched = await getProblemSubmissions(user.uid, problem.id.toString());
       setPastSubmissions(fetched);
     } catch (error) {
       console.error("Error loading submissions:", error);
@@ -119,9 +119,9 @@ export default function CodeWorkspace({ problem }: CodeWorkspaceProps) {
       const result = await response.json();
       setSubmitVerdict(result);
 
-      // Perform PostgreSQL Database transaction updates via SQL Connect
-      const dataConnectData = await getDashboardStatsSQL(user.uid);
-      const currentProgress = dataConnectData.progress;
+      // Perform database progress updates
+      const dashboardStats = await getDashboardStats(user.uid);
+      const currentProgress = dashboardStats.progress;
       
       const todayStr = new Date().toISOString().split("T")[0];
       const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split("T")[0];
@@ -133,7 +133,7 @@ export default function CodeWorkspace({ problem }: CodeWorkspaceProps) {
         streakVal = currentProgress.streak;
       }
 
-      await addSubmissionSQL({
+      await addSubmission({
         userId: user.uid,
         problemId: problem.id.toString(),
         problemTitle: problem.title,

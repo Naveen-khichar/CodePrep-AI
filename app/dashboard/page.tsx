@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import ProtectedRoute from "../components/ProtectedRoute";
-import { getDashboardStatsSQL } from "../lib/dataconnect";
+import { getDashboardStats } from "../lib/db";
 import { Timestamp } from "firebase/firestore";
 import { problems } from "../data/problems";
 import Link from "next/link";
@@ -37,7 +37,7 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const data = await getDashboardStatsSQL(user.uid);
+        const data = await getDashboardStats(user.uid);
         setStats(data.progress as ProgressStats);
         setRecentSubmissions(data.recentSubmissions);
       } catch (error) {

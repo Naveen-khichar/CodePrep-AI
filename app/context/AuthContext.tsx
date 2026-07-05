@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider } from "../lib/firebase";
-import { syncUserSQL } from "../lib/dataconnect";
+import { syncUser } from "../lib/db";
 
 interface AuthContextType {
   user: User | null;
@@ -23,16 +23,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser) {
         setUser(firebaseUser);
         
-        // Sync user to PostgreSQL using SQL Connect
+        // Sync user profile in Firestore
         try {
-          await syncUserSQL({
+          await syncUser({
             id: firebaseUser.uid,
             email: firebaseUser.email || "",
             displayName: firebaseUser.displayName || "User",
             photoUrl: firebaseUser.photoURL || undefined
           });
         } catch (error) {
-          console.error("Error synchronizing user session with SQL Connect:", error);
+          console.error("Error synchronizing user session with Firestore:", error);
         }
       } else {
         setUser(null);
